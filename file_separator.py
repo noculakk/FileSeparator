@@ -28,7 +28,17 @@ class FileSeparator:
     @classmethod
     def run(cls, fso: FileSeparatorOptions):
         if not os.path.isdir(fso.base_dir) or not os.path.isdir(fso.target_dir):
-            raise ValueError('komunikat folder nie istnieje')
+            raise ValueError('directory does not exist')
+
+        if fso.base_dir == fso.target_dir:
+            raise ValueError('base and target directory cannot be the same')
+
+        if not fso.extensions == []:
+            files = [f for f in cls.get_all_files(fso.base_dir) if os.path.splitext(f[0])[1] in fso.extensions]
+        else:
+            files = cls.get_all_files(fso.base_dir)
+
+
 
     @classmethod
     def preview(cls, fso: FileSeparatorOptions):
@@ -52,3 +62,20 @@ class FileSeparator:
                 files_list.append((f_path, f_date, f_size))
 
         return files_list
+
+    @classmethod
+    def separate_by_size(cls, files: List[Tuple[str, datetime, int]], separators_list: List[int]):
+        if len(separators_list) == 1:
+            return { (-1, -1): files}
+
+        dictionary = { (-1, separators_list[0]): [], (separators_list[-1], -1): []}
+
+        for i in range(1, len(dictionary) - 1):
+            dictionary[(separators_list[i - 1], separators_list[i])] = []
+
+        for f in files:
+            for key in dictionary.keys():
+                if key[0] < f[2] <= key[1] or (key[1] == -1 and f[2] > key[0]):
+                    dictionary[key].append(f)
+
+        return dictionary
