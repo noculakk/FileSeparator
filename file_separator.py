@@ -1,9 +1,10 @@
+import time
+import os
 from dataclasses import dataclass
 from typing import List, Tuple
 from enum import Enum
-from datetime import datetime
-import os
-import time
+from datetime import datetime, timedelta
+from dateutil.relativedelta import relativedelta
 
 
 class DateDirFormat(Enum):
@@ -77,5 +78,47 @@ class FileSeparator:
             for key in dictionary.keys():
                 if key[0] < f[2] <= key[1] or (key[1] == -1 and f[2] > key[0]):
                     dictionary[key].append(f)
+
+        return dictionary
+
+    @classmethod
+    def separate_by_date(cls, files: List[Tuple[str, datetime, int]], date_format: DateDirFormat):
+        date_list = [date for _, date, _ in files]
+        oldest = min(date_list)
+        youngest = max(date_list)
+        delta_time = relativedelta(oldest, youngest)
+
+        dictionary = {}
+        if date_format == DateDirFormat.dmy:
+            for d in range(delta_time.days + 1):
+                day = oldest + relativedelta(days=d)
+                dictionary[day] = []
+
+            for f in files:
+                for key in dictionary.keys():
+                    if key.year == f[1].year and key.month == f[1].month and key.day == f[1].day:
+                        dictionary[key].append(f)
+
+            return dictionary
+
+        if date_format == DateDirFormat.my:
+            for m in range(delta_time.months + 1):
+                month = oldest + relativedelta(months=m)
+                dictionary[month] = []
+            for f in files:
+                for key in dictionary.keys():
+                    if key.year == f[1].year and key.month == f[1].month:
+                        dictionary[key].append(f)
+
+            return dictionary
+
+        for y in range(delta_time.years +1):
+            year = oldest + relativedelta(years=y)
+            dictionary[year] = []
+
+            for f in files:
+                for key in dictionary.keys():
+                    if key.year == f[1].year:
+                        dictionary[key].append(f)
 
         return dictionary
