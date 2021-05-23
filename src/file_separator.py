@@ -39,6 +39,15 @@ class FileSeparator:
         else:
             files = cls.get_all_files(fso.base_dir)
 
+        if fso.by_size_order is not None:
+            dictionary = cls.separate_by_size(files, fso.by_size_order)
+        elif fso.by_date_order is not None:
+            dictionary = cls.separate_by_date(files, fso.by_date_order)
+        else:
+            raise NotImplementedError()
+
+
+
 
 
     @classmethod
@@ -120,5 +129,4 @@ class FileSeparator:
                 for key in dictionary.keys():
                     if key.year == f[1].year:
                         dictionary[key].append(f)
-
-        return dictionary
+            return dictionary
