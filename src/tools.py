@@ -19,10 +19,11 @@ def is_dictionary_empty(dictionary):
     return True
 
 
-def flatten_dict(d, parent_key='', sep='/'):
+def flatten_dict(d, parent_key='', sep='\\'):
     items = []
     for k, v in d.items():
-        new_key = parent_key + sep + k if parent_key else k
+        formatted_k = [str(k) if k >= 10 else '0' + str(k) for k in k]
+        new_key = parent_key + sep + '-'.join(formatted_k) if parent_key else '-'.join(formatted_k)
         if isinstance(v, collections.MutableMapping):
             items.extend(flatten_dict(v, new_key, sep=sep).items())
         else:

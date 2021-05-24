@@ -7,7 +7,8 @@ from datetime import datetime
 from dateutil.relativedelta import relativedelta
 from shutil import copy2
 from calendar import monthrange
-from src.tools import is_dictionary_empty
+from src.tools import is_dictionary_empty, flatten_dict
+from pathlib import Path
 
 
 class DateDirFormat(Enum):
@@ -113,69 +114,27 @@ class FileSeparator:
     @classmethod
     def run_by_date(cls, files, fso):
         dictionary = cls.separate_by_date(files, fso.by_date_order)
-        for year in dictionary:
-            str_year = Parser.date_to_str(year, DateDirFormat.y)
-            path_year = os.path.join(fso.target_dir, str_year)
+        flat_dictionary = flatten_dict(dictionary)
 
-            if os.path.isdir(path_year):
-                path_year = path_year + '___FileSeparator'
-
-            if not fso.make_empty_dir and is_dictionary_empty(dictionary[year]):
+        for path, files in flat_dictionary.items():
+            if not fso.make_empty_dir and not flat_dictionary[path]:
                 continue
 
-            os.mkdir(path_year)
+            path = os.path.join(fso.target_dir, path)
 
-            if fso.by_date_order == DateDirFormat.y:
-                for f in dictionary[year]:
-                    copy2(f[0], path_year)
+            if os.path.isdir(path):
+                path = path + '___FileSeparator'
 
-                    if fso.remove_org_files:
-                        os.remove(f[0])
-                        if not os.listdir(os.path.dirname(f[0])):
-                            os.rmdir(os.path.dirname(f[0]))
+            os.makedirs(path)
 
-            elif fso.by_date_order == DateDirFormat.my or fso.by_date_order == DateDirFormat.dmy:
-                for month in dictionary[year]:
-                    str_month = Parser.date_to_str(month, DateDirFormat.my)
-                    path_month = os.path.join(fso.target_dir, str_year, str_month)
+            for f in files:
+                copy2(f[0], path)
 
-                    if os.path.isdir(path_month):
-                        path_month = path_month + '___FileSeparator'
+                if fso.remove_org_files:
+                    os.remove(f[0])
 
-                    if not fso.make_empty_dir and is_dictionary_empty(dictionary[year][month]):
-                        continue
-
-                    os.mkdir(path_month)
-
-                    if fso.by_date_order == DateDirFormat.my:
-                        for f in dictionary[year][month]:
-                            copy2(f[0], path_month)
-
-                            if fso.remove_org_files:
-                                os.remove(f[0])
-                                if not os.listdir(os.path.dirname(f[0])):
-                                    os.rmdir(os.path.dirname(f[0]))
-
-                    else:
-                        for day in dictionary[year][month]:
-                            str_day = Parser.date_to_str(day, DateDirFormat.dmy)
-                            path_day = os.path.join(fso.target_dir, str_year, str_month, str_day)
-
-                            if os.path.isdir(path_month):
-                                path_month = path_month + '___FileSeparator'
-
-                            if not fso.make_empty_dir and is_dictionary_empty(dictionary[year][month][day]):
-                                continue
-
-                            os.mkdir(path_day)
-
-                            for f in dictionary[year][month][day]:
-                                copy2(f[0], path_day)
-
-                                if fso.remove_org_files:
-                                    os.remove(f[0])
-                                    if not os.listdir(os.path.dirname(f[0])):
-                                        os.rmdir(os.path.dirname(f[0]))
+                    if not os.listdir(os.path.dirname(f[0])):
+                        os.rmdir(os.path.dirname(f[0]))
 
     @classmethod
     def run_by_size(cls, files, fso):
@@ -251,11 +210,11 @@ class FileSeparator:
 
         for y in range(delta_time + 1):
             year = oldest + relativedelta(years=y)
-            dictionary[year] = []
+            dictionary[(year.year, )] = []
 
             for f in files:
                 for key in dictionary.keys():
-                    if key.year == f[1].year:
+                    if key[0] == f[1].year:
                         dictionary[key].append(f)
 
         if date_format == DateDirFormat.my or date_format == DateDirFormat.dmy:
@@ -263,12 +222,12 @@ class FileSeparator:
                 dictionary[k] = {}
 
                 for m in range(1, 13):
-                    month = datetime(year=k.year, month=m, day=1)
-                    dictionary[k][month] = []
+                    month = datetime(year=k[0], month=m, day=1)
+                    dictionary[k][(k[0], month.month)] = []
 
                 for f in v:
                     for key in dictionary[k].keys():
-                        if key.year == f[1].year and key.month == f[1].month:
+                        if key[0] == f[1].year and key[1] == f[1].month:
                             dictionary[k][key].append(f)
 
         if date_format == DateDirFormat.dmy:
@@ -276,13 +235,13 @@ class FileSeparator:
                 for k_2, v_2 in dictionary[k_1].items():
                     dictionary[k_1][k_2] = {}
 
-                    for d in range(monthrange(k_2.year, k_2.month)[1]):
-                        day = datetime(year=k_2.year, month=k_2.month, day=d + 1)
-                        dictionary[k_1][k_2][day] = []
+                    for d in range(monthrange(k_2[0], k_2[1])[1]):
+                        day = datetime(year=k_2[0], month=k_2[1], day=d + 1)
+                        dictionary[k_1][k_2][(k_2[0], k_2[1], day.day)] = []
 
                     for f in v_2:
                         for key in dictionary[k_1][k_2].keys():
-                            if key.year == f[1].year and key.month == f[1].month and key.day == f[1].day:
+                            if key[0] == f[1].year and key[1] == f[1].month and key[2] == f[1].day:
                                 dictionary[k_1][k_2][key].append(f)
 
         return dictionary
