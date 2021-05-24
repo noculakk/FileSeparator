@@ -1,8 +1,6 @@
 from unittest import TestCase
 from datetime import datetime
-
-from src.file_separator import DateDirFormat
-from src.parser import Parser
+from src.file_separator import DateDirFormat, Parser
 
 
 class TestParser(TestCase):
@@ -18,6 +16,6 @@ class TestParser(TestCase):
 
     def test_int_to_str(self):
         self.assertEqual('1.00 KB - 1.00 GB', Parser.int_to_str((1024, 1024 ** 3)))
-        self.assertEqual('> 2.50 KB', Parser.int_to_str((2560, -1)))
-        self.assertEqual('< 5.00 MB', Parser.int_to_str((-1, 5 * 1024 ** 2)))
+        self.assertEqual('Mniejsze niż 2.50 KB', Parser.int_to_str((2560, -1)))
+        self.assertEqual('Większe niż 5.00 MB', Parser.int_to_str((-1, 5 * 1024 ** 2)))
         self.assertEqual('Wszystkie pliki', Parser.int_to_str((-1, -1)))
