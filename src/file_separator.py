@@ -8,13 +8,13 @@ from dateutil.relativedelta import relativedelta
 from shutil import copy2
 from calendar import monthrange
 from src.tools import is_dictionary_empty, flatten_dict
-from pathlib import Path
+from file_separator_error import *
 
 
 class DateDirFormat(Enum):
-    dmy = 1
-    my = 2
-    y = 3
+    dmy = 0
+    my = 1
+    y = 2
 
 
 @dataclass
@@ -23,12 +23,22 @@ class FileSeparatorOptions:
     target_dir: str
     extensions: List[str]
     by_date_order: DateDirFormat
+    by_creation_date: bool
     by_size_order: List[int]
     make_empty_dir: bool
     remove_org_files: bool
 
 
 class Parser:
+    @classmethod
+    def extensions_to_list(cls, extensions: str) -> List[str]:
+        if extensions == '':
+            return []
+        extensions_list = [ext.strip() for ext in extensions.split(',')]
+        if not all(len(e.split()) == 1 and e[0] == '.' for e in extensions_list):
+            raise ValueError("Rozszerzenie podane w blednej formie")
+        return extensions_list
+
     @classmethod
     def date_to_str(cls, dt: datetime, format: DateDirFormat) -> str:
         if format is DateDirFormat.dmy:
@@ -95,12 +105,15 @@ class FileSeparator:
     @classmethod
     def run(cls, fso: FileSeparatorOptions):
         if not os.path.isdir(fso.base_dir) or not os.path.isdir(fso.target_dir):
-            raise ValueError('directory does not exist')
+            raise DirectoryNotExistError()
 
         if not fso.extensions == []:
-            files = [f for f in cls.get_all_files(fso.base_dir) if os.path.splitext(f[0])[1] in fso.extensions]
+            files = [f for f in cls.get_all_files(fso.base_dir, fso.by_creation_date) if os.path.splitext(f[0])[1] in fso.extensions]
         else:
-            files = cls.get_all_files(fso.base_dir)
+            files = cls.get_all_files(fso.base_dir, fso.by_creation_date)
+
+        if not files:
+            raise EmptyFilesListError()
 
         if fso.by_size_order is not None:
             cls.run_by_size(files, fso)
@@ -160,11 +173,7 @@ class FileSeparator:
                         os.rmdir(os.path.dirname(f[0]))
 
     @classmethod
-    def preview(cls, fso: FileSeparatorOptions):
-        pass
-
-    @classmethod
-    def get_all_files(cls, root_dir: str) -> List[Tuple[str, datetime, int]]:
+    def get_all_files(cls, root_dir: str, by_creation_date) -> List[Tuple[str, datetime, int]]:
         """
         :return: list of files with paths relative to root_dir, creation dates, sizes
         """
@@ -175,7 +184,7 @@ class FileSeparator:
                 f_path = os.path.join(dir_path, f)
                 f_size = os.path.getsize(f_path)
 
-                f_time = time.ctime(os.path.getmtime(f_path))
+                f_time = time.ctime(os.path.getctime(f_path) if by_creation_date else os.path.getmtime(f_path))
                 f_date = datetime.strptime(f_time, '%a %b %d %H:%M:%S %Y')
 
                 files_list.append((f_path, f_date, f_size))
@@ -247,6 +256,7 @@ class FileSeparator:
         return dictionary
 
 
+# Test
 if __name__ == '__main__':
     FileSeparator.run(FileSeparatorOptions(
         base_dir='C:\\Wszystko\\Dokumenty\\Studia\\IV semestr\\J skryptowe\\Projekt_test\\Stary',
