@@ -1,10 +1,10 @@
 import sys
-from src.file_separator import FileSeparator, FileSeparatorOptions, DateDirFormat, Parser
+from file_separator import FileSeparator, FileSeparatorOptions, DateDirFormat, Parser
 
 from PySide2.QtCore import *
 from PySide2.QtGui import *
 from PySide2.QtWidgets import *
-from src.file_separator_error import *
+from file_separator_error import *
 import style
 
 

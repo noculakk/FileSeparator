@@ -7,7 +7,7 @@ from datetime import datetime
 from dateutil.relativedelta import relativedelta
 from shutil import copy2
 from calendar import monthrange
-from src.tools import is_dictionary_empty, flatten_dict
+from tools import is_dictionary_empty, flatten_dict
 from file_separator_error import *
 
 
@@ -254,16 +254,3 @@ class FileSeparator:
                                 dictionary[k_1][k_2][key].append(f)
 
         return dictionary
-
-
-# Test
-if __name__ == '__main__':
-    FileSeparator.run(FileSeparatorOptions(
-        base_dir='C:\\Wszystko\\Dokumenty\\Studia\\IV semestr\\J skryptowe\\Projekt_test\\Stary',
-        target_dir='C:\\Wszystko\\Dokumenty\\Studia\\IV semestr\\J skryptowe\\Projekt_test\\Nowy',
-        extensions=[],
-        by_date_order=DateDirFormat.dmy,
-        by_size_order=None,
-        make_empty_dir=False,
-        remove_org_files=False
-    ))
